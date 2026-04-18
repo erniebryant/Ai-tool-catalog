@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Tool {
+  id                   String   @id @default(cuid())
+  name                 String
+  slug                 String   @unique
+  shortDescription     String?
+  longDescription      String?
+  websiteUrl           String?  @unique
+  githubUrl            String?  @unique
+  githubOwner          String?
+  githubRepoName       String?
+  githubStars          Int      @default(0)
+  githubForks          Int      @default(0)
+  githubOpenIssues     Int      @default(0)
+  githubLicense        String?
+  githubLanguage       String?
+  githubLastPushedAt   DateTime?
+  packageInfo          String?
+  documentationUrl     String?
+  demoUrl              String?
+  pricingModel         String?
+  businessModel        String @default("unknown")
+  sourceReferenceCount Int      @default(0)
+  distinctSourceCount  Int      @default(0)
+  firstDiscoveredAt    DateTime @default(now())
+  lastSeenAt           DateTime @default(now())
+  lastEnrichedAt       DateTime?
+  popularityScore      Float    @default(0)
+  trendScore           Float    @default(0)
+  confidenceScore      Float    @default(0)
+  status               String @default("draft")
+  extractionNotes      String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  categories ToolCategory[]
+  tags       ToolTag[]
+  useCases   ToolUseCase[]
+  references SourceReference[]
+  scores     ScoreHistory[]
+
+  @@index([name])
+  @@index([status])
+  @@index([popularityScore])
+  @@index([trendScore])
+}
+
+model SourceReference {
+  id                    String   @id @default(cuid())
+  toolId                String?
+  sourceType            String
+  sourceName            String
+  sourceAccount         String?
+  sourceDomain          String?
+  sourceUrl             String
+  rawTitle              String?
+  rawText               String?
+  normalizedToolName    String?
+  extractedUrls         String?
+  discoveredAt          DateTime @default(now())
+  publishedAt           DateTime?
+  engagement            String?
+  confidenceScore       Float    @default(0)
+  processedStatus       String   @default("new")
+  rawPayload            String?
+  createdAt             DateTime @default(now())
+
+  tool Tool? @relation(fields: [toolId], references: [id], onDelete: SetNull)
+
+  @@index([toolId])
+  @@index([sourceType])
+  @@index([sourceDomain])
+}
+
+model Category {
+  id        String @id @default(cuid())
+  name      String @unique
+  slug      String @unique
+  createdAt DateTime @default(now())
+
+  tools ToolCategory[]
+}
+
+model ToolCategory {
+  toolId     String
+  categoryId String
+  isPrimary  Boolean @default(false)
+
+  tool     Tool     @relation(fields: [toolId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([toolId, categoryId])
+}
+
+model Tag {
+  id   String @id @default(cuid())
+  name String @unique
+  slug String @unique
+
+  tools ToolTag[]
+}
+
+model ToolTag {
+  toolId String
+  tagId  String
+
+  tool Tool @relation(fields: [toolId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([toolId, tagId])
+}
+
+model UseCase {
+  id   String @id @default(cuid())
+  name String @unique
+  slug String @unique
+
+  tools ToolUseCase[]
+}
+
+model ToolUseCase {
+  toolId    String
+  useCaseId String
+
+  tool    Tool    @relation(fields: [toolId], references: [id], onDelete: Cascade)
+  useCase UseCase @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+
+  @@id([toolId, useCaseId])
+}
+
+model ScoreHistory {
+  id              String   @id @default(cuid())
+  toolId           String
+  popularityScore  Float
+  trendScore       Float
+  confidenceScore  Float
+  calculatedAt     DateTime @default(now())
+
+  tool Tool @relation(fields: [toolId], references: [id], onDelete: Cascade)
+
+  @@index([toolId])
+}
